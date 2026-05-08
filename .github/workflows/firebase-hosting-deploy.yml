@@ -35,21 +35,17 @@ jobs:
       - name: Prepare service account key file
         shell: bash
         env:
-          FIREBASE_SA_B64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ACSUSJ_WEB_B64 }}
           FIREBASE_SA_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ACSUSJ_WEB }}
         run: |
           set -euo pipefail
           KEY_FILE="$RUNNER_TEMP/gcp-key.json"
 
-          if [ -n "${FIREBASE_SA_B64:-}" ]; then
-            echo "$FIREBASE_SA_B64" | base64 --decode > "$KEY_FILE"
-          elif [ -n "${FIREBASE_SA_JSON:-}" ]; then
-            printf '%s' "$FIREBASE_SA_JSON" > "$KEY_FILE"
-          else
-            echo "Missing Firebase service account secret. Set FIREBASE_SERVICE_ACCOUNT_ACSUSJ_WEB_B64 or FIREBASE_SERVICE_ACCOUNT_ACSUSJ_WEB."
+          if [ -z "${FIREBASE_SA_JSON:-}" ]; then
+            echo "Missing Firebase service account secret. Set FIREBASE_SERVICE_ACCOUNT_ACSUSJ_WEB."
             exit 1
           fi
 
+          printf '%s' "$FIREBASE_SA_JSON" > "$KEY_FILE"
           python3 -c "import json,sys; json.load(open(sys.argv[1])); print('Service account JSON is valid')" "$KEY_FILE"
 
       - name: Authenticate to Google Cloud
