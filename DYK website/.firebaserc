@@ -1,0 +1,16 @@
+{
+  "projects": {
+    "default": "acsusj-web",
+    "dyk-acsusj": "acsusj-web"
+  },
+  "targets": {
+    "acsusj-web": {
+      "hosting": {
+        "dyk-acsusj": [
+          "dyk-acsusj"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}
