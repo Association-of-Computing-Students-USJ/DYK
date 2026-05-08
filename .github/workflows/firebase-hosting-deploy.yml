@@ -32,23 +32,30 @@ jobs:
         run: npm run build
         working-directory: DYK website
 
-      - name: Decode service account key (base64)
-        if: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ACSUSJ_WEB_B64 != '' }}
+      - name: Prepare service account key file
         shell: bash
+        env:
+          FIREBASE_SA_B64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ACSUSJ_WEB_B64 }}
+          FIREBASE_SA_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ACSUSJ_WEB }}
         run: |
-          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_ACSUSJ_WEB_B64 }}" | base64 -d > "$RUNNER_TEMP/gcp-key.json"
+          set -euo pipefail
+          KEY_FILE="$RUNNER_TEMP/gcp-key.json"
 
-      - name: Authenticate to Google Cloud (base64 secret)
-        if: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ACSUSJ_WEB_B64 != '' }}
+          if [ -n "${FIREBASE_SA_B64:-}" ]; then
+            echo "$FIREBASE_SA_B64" | base64 --decode > "$KEY_FILE"
+          elif [ -n "${FIREBASE_SA_JSON:-}" ]; then
+            printf '%s' "$FIREBASE_SA_JSON" > "$KEY_FILE"
+          else
+            echo "Missing Firebase service account secret. Set FIREBASE_SERVICE_ACCOUNT_ACSUSJ_WEB_B64 or FIREBASE_SERVICE_ACCOUNT_ACSUSJ_WEB."
+            exit 1
+          fi
+
+          python3 -c "import json,sys; json.load(open(sys.argv[1])); print('Service account JSON is valid')" "$KEY_FILE"
+
+      - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
           credentials_file_path: ${{ runner.temp }}/gcp-key.json
-
-      - name: Authenticate to Google Cloud (raw JSON secret)
-        if: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ACSUSJ_WEB_B64 == '' }}
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ACSUSJ_WEB }}
 
       - name: Deploy to Firebase Hosting site dyk-acsusj
         run: npx firebase-tools deploy --project acsusj-web --only hosting:dyk-acsusj --config "DYK website/firebase.json" --non-interactive
