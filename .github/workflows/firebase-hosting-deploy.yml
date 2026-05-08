@@ -32,26 +32,10 @@ jobs:
         run: npm run build
         working-directory: DYK website
 
-      - name: Prepare service account key file
-        shell: bash
-        env:
-          FIREBASE_SA_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ACSUSJ_WEB }}
-        run: |
-          set -euo pipefail
-          KEY_FILE="$RUNNER_TEMP/gcp-key.json"
-
-          if [ -z "${FIREBASE_SA_JSON:-}" ]; then
-            echo "Missing Firebase service account secret. Set FIREBASE_SERVICE_ACCOUNT_ACSUSJ_WEB."
-            exit 1
-          fi
-
-          printf '%s' "$FIREBASE_SA_JSON" > "$KEY_FILE"
-          python3 -c "import json,sys; json.load(open(sys.argv[1])); print('Service account JSON is valid')" "$KEY_FILE"
-
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          credentials_file_path: ${{ runner.temp }}/gcp-key.json
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ACSUSJ_WEB }}
 
       - name: Deploy to Firebase Hosting site dyk-acsusj
         run: npx firebase-tools deploy --project acsusj-web --only hosting:dyk-acsusj --config "DYK website/firebase.json" --non-interactive
